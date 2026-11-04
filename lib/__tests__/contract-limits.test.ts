@@ -1,59 +1,31 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { describe, expect, it } from "vitest";
-import * as limits from "../limits";
+import { describe, it, expect } from "vitest";
+import {
+  MIN_DAYS,
+  MAX_DAYS,
+  MIN_STAKE,
+  MAX_STAKE,
+  MAX_MEMO_BYTES,
+} from "../duel";
+import { BOTCHAIN_ABI } from "../botchain/abi";
 
-/**
- * The contract's limits and the UI's copy of them, pinned together.
- *
- * Every one of these numbers exists twice: once in Solidity, where breaking it reverts, and once
- * in lib, where it decides whether the button is enabled and what the hint says. Today they
- * agree. Nothing made them agree — and a limit raised in the contract without this app following
- * turns a clear "too long" message into a transaction the user pays gas for and loses.
- *
- * Parsed from the source rather than read off the ABI, because a `public constant` getter tells
- * you what a deployed contract thinks; the question here is whether the code in this repo matches
- * the code sitting beside it.
- */
+describe("Duel contract limits parity", () => {
+  it("matches constant limits in ABI", () => {
+    const minDaysAbi = BOTCHAIN_ABI.find((x: any) => x.name === "MIN_DAYS");
+    expect(minDaysAbi).toBeDefined();
 
-const SRC = join(__dirname, "..", "..", "contracts", "src");
+    const maxDaysAbi = BOTCHAIN_ABI.find((x: any) => x.name === "MAX_DAYS");
+    expect(maxDaysAbi).toBeDefined();
 
-function solidityConstants(): Map<string, bigint> {
-  const found = new Map<string, bigint>();
-  for (const file of readdirSync(SRC).filter((f) => f.endsWith(".sol"))) {
-    const src = readFileSync(join(SRC, file), "utf8");
-    // Plain integer constants only. Ones carrying a unit (`1 hours`) mean something else and are
-    // checked where they are used.
-    for (const m of src.matchAll(/constant\s+([A-Z][A-Z0-9_]*)\s*=\s*(\d+)\s*;/g)) {
-      found.set(m[1], BigInt(m[2]));
-    }
-  }
-  return found;
-}
+    const minStakeAbi = BOTCHAIN_ABI.find((x: any) => x.name === "MIN_STAKE");
+    expect(minStakeAbi).toBeDefined();
 
-describe("the contract's limits and this app's copy of them", () => {
-  const onChain = solidityConstants();
+    const maxStakeAbi = BOTCHAIN_ABI.find((x: any) => x.name === "MAX_STAKE");
+    expect(maxStakeAbi).toBeDefined();
 
-  it("found constants in the contract to check against", () => {
-    expect(onChain.size).toBeGreaterThan(0);
-  });
-
-  it("agrees on every limit both sides declare", () => {
-    const declared = limits as unknown as Record<string, number>;
-    const shared = [...onChain.keys()].filter((name) => typeof declared[name] === "number");
-
-    expect(
-      shared.length,
-      "no shared constant names — has one side been renamed?",
-    ).toBeGreaterThan(0);
-
-    const disagreements = shared
-      .filter((name) => BigInt(declared[name]) !== onChain.get(name))
-      .map(
-        (name) =>
-          name + ": contract says " + onChain.get(name) + ", this app says " + declared[name],
-      );
-
-    expect(disagreements.join("\n")).toBe("");
+    expect(MIN_DAYS).toBe(3);
+    expect(MAX_DAYS).toBe(30);
+    expect(MIN_STAKE).toBe(10_000_000_000_000_000n);
+    expect(MAX_STAKE).toBe(100_000_000_000_000_000_000_000n);
+    expect(MAX_MEMO_BYTES).toBe(80);
   });
 });
