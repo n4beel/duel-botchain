@@ -43,3 +43,6 @@ export function formatDuelError(err: any): string {
 
   return msg;
 }
+
+export const formatError = formatDuelError;
+

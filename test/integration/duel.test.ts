@@ -226,7 +226,8 @@ describe("Duel Integration Test", () => {
       mCurrent.b
     );
     expect(outcomeResult.canSettle).toBe(true);
-    expect(outcomeResult.winner.toLowerCase()).toBe(playerA.address.toLowerCase());
+    expect(outcomeResult.winner).not.toBeNull();
+    expect(outcomeResult.winner!.toLowerCase()).toBe(playerA.address.toLowerCase());
     expect(outcomeResult.firstMissDay).toBe(1);
 
     // Settle by outsider

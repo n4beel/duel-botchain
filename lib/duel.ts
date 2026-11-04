@@ -146,3 +146,14 @@ export function outcome(
     isDraw: false,
   };
 }
+
+export function isCheckedIn(bits: number, dayIdx: number): boolean {
+  if (dayIdx < 0 || dayIdx >= 32) return false;
+  return ((bits >> dayIdx) & 1) === 1;
+}
+
+export function formatAddress(addr: string): string {
+  if (!addr || addr.length < 10) return addr;
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
+
