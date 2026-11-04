@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Teko, Rajdhani } from "next/font/google";
 import { EvmProvider } from "@/components/providers/EvmProvider";
 import { ToastProvider } from "@/components/ui/Toast";
+import WrongNetworkBar from "@/components/botchain/WrongNetworkBar";
 import { app } from "@/lib/app-config";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"], display: "swap" });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], display: "swap" });
+const teko = Teko({ variable: "--font-heading", subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap" });
+const rajdhani = Rajdhani({ variable: "--font-sans", subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap" });
 
 export const metadata: Metadata = {
   title: `${app.name} — ${app.tagline}`,
@@ -18,20 +19,21 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0A0A0A",
+  themeColor: "#FF4DC9",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full`}
+      className={`${rajdhani.variable} ${teko.variable} h-full`}
       // The project's accent, written once at the root. Every component reads `var(--accent)`, so
       // this is the only place a palette change has to happen.
       style={{ ["--accent" as string]: app.accent }}
     >
-      <body className="min-h-full antialiased">
+      <body className="min-h-full antialiased font-sans">
         <EvmProvider>
+          <WrongNetworkBar />
           <ToastProvider>{children}</ToastProvider>
         </EvmProvider>
       </body>
