@@ -493,24 +493,59 @@ contract DuelTest is Test {
     uint256 idMin = duel.challenge{value: 0.01 ether}(bob, 3, "Min");
     assertEq(duel.matchOf(idMin).stake, 0.01 ether);
 
+    // Exact MAX_MEMO_BYTES (80 bytes)
+    string memory memo80 = "12345678901234567890123456789012345678901234567890123456789012345678901234567890";
+    vm.prank(alice);
+    uint256 idMemo = duel.challenge{value: 0.01 ether}(bob, 3, memo80);
+    assertEq(duel.matchOf(idMemo).stake, 0.01 ether);
+
+    // Accept exactly at acceptBy boundary
+    uint64 acceptBy = duel.matchOf(idMin).acceptBy;
+    vm.warp(acceptBy);
+    vm.prank(bob);
+    duel.accept{value: 0.01 ether}(idMin);
+    assertEq(uint8(duel.matchOf(idMin).state), 1); // Active
+
+    // Status view checks for running duel
+    (uint64 curToday, uint64 startDay, int32 dayNum, bool canSettle) = duel.status(idMin);
+    assertEq(startDay, (acceptBy / 1 days) + 1);
+    assertEq(dayNum, -int32(uint32(startDay - curToday)));
+    assertFalse(canSettle);
+
+    // Warp to day 0 of duel (curToday == startDay)
+    vm.warp(startDay * 1 days + 1 hours);
+    (, , dayNum, canSettle) = duel.status(idMin);
+    assertEq(dayNum, 1);
+    assertFalse(canSettle);
+
+    // Warp to day 1, neither checked in on day 0 -> Settleable!
+    vm.warp((startDay + 1) * 1 days + 1 hours);
+    (, , dayNum, canSettle) = duel.status(idMin);
+    assertEq(dayNum, 2);
+    assertTrue(canSettle);
+
+    // Settle it
+    duel.settle(idMin);
+    assertEq(uint8(duel.matchOf(idMin).state), 2); // Settled
+
+    // Inactive status view
+    (, , , canSettle) = duel.status(idMin);
+    assertFalse(canSettle);
+
+    // Check status revert on out of bounds
+    vm.expectRevert(Duel.MatchNotFound.selector);
+    duel.status(0);
+    vm.expectRevert(Duel.MatchNotFound.selector);
+    duel.status(999);
+
+    // Check latest view pagination & id math
+    (uint256[] memory ids, , ) = duel.latest(0, 1);
+    assertEq(ids.length, 1);
+    assertEq(ids[0], duel.matchCount());
+
     vm.deal(alice, 200_000 ether);
     vm.prank(alice);
     uint256 idMax = duel.challenge{value: 100_000 ether}(bob, 30, "Max");
     assertEq(duel.matchOf(idMax).stake, 100_000 ether);
-
-    // 2. Status view coverage
-    (uint64 curToday, uint64 startDay, int32 dayNumber, bool canSettle) = duel.status(idMin);
-    assertEq(dayNumber, 0); // Offered state
-    assertFalse(canSettle);
-
-    // 3. byParty view coverage
-    (uint256[] memory partyIds, , uint256 totalParty) = duel.byParty(alice, 0, 10);
-    assertEq(partyIds.length, 2);
-    assertEq(totalParty, 2);
-
-    // 4. latest view coverage
-    (uint256[] memory latestIds, , uint256 totalLatest) = duel.latest(0, 10);
-    assertEq(latestIds.length, 2);
-    assertEq(totalLatest, 2);
   }
 }

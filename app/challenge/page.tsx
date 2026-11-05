@@ -18,7 +18,7 @@ export default function ChallengePage() {
   const router = useRouter();
   const { address } = useAccount();
   const { toast } = useToast();
-  const publicClient = usePublicClient();
+  const publicClient = usePublicClient({ chainId: activeBotChain.id });
   const { writeContractAsync } = useWriteContract();
   const deployment = getDeployment(activeBotChain.id);
   const contractAddress = deployment.address;
